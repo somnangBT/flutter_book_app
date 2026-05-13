@@ -17,10 +17,10 @@ void main() async {
   await DbManager.instance.database;
 
   // File Storage
-  final fileStorageManager = FileStorageManager();
-  await fileStorageManager.initFileStorage();
+  // final fileStorageManager = FileStorageManager();
+  // await fileStorageManager.initFileStorage();
   // await fileStorageManager.saveFileStorage();
-  await fileStorageManager.readFileStorage();
+  // await fileStorageManager.readFileStorage();
 
   runApp(const App());
 }

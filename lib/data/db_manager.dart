@@ -22,7 +22,7 @@ class DbManager {
   Future<void> _onTableCreate(Database db, int version) async{
     String idType = "INTEGER PRIMARY KEY AUTOINCREMENT";
     String textType = "TEXT";
-    String doubleType = "DOUBLE";
+    String doubleType = "REAL";
     String intType = "INTEGER";
 
     String _bookTable = '''

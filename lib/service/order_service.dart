@@ -20,4 +20,9 @@ class OrderService {
     return List.generate(maps.length, (i) => Orders.fromMap(maps[i]));
   }
 
+  Future<void> removeCart(int id) async {
+    final db = await DbManager.instance.database;
+    await db.delete(ordersTable, where: "id=?", whereArgs: [id]);
+  }
+
 }
