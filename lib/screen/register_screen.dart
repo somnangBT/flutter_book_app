@@ -34,23 +34,42 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     final _keyForm = GlobalKey<FormState>();
 
-    Future<void> _onRegisterSubmitHandler() async{
-      print("Full Name ${fullNameController.text}");
-      print("Email  : ${emailController.text}");
-      print("Password : ${passwordController.text}");
-
-      if(_keyForm.currentState!.validate()){
+    Future<void> _onRegisterSubmitHandler() async {
+      if (_keyForm.currentState!.validate()) {
         String fullName = fullNameController.text;
         String user = emailController.text;
         String pass = passwordController.text;
-        // Can submit to Backend API.
+
+        // Save to SharedPreferences
         final pref = await SharedPreferences.getInstance();
         await pref.setString("fullName", fullName);
         await pref.setString("username", user);
         await pref.setString("password", pass);
-        print("Register success...");
-        // final route = MaterialPageRoute(builder: (BuildContext context) => MainScreen());
-        // Navigator.pushReplacement(context, route);
+
+        // Show Alert Dialog
+        if (!mounted) return; // Safety check for async gaps
+        showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: const Text("ជោគជ័យ"),
+              content: const Text("ការចុះឈ្មោះរបស់អ្នកបានជោគជ័យ!"),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop(); // Close dialog
+                    // Navigate to Login or Main Screen
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(builder: (context) => const LoginScreen()),
+                    );
+                  },
+                  child: const Text("យល់ព្រម"),
+                ),
+              ],
+            );
+          },
+        );
       }
     }
 

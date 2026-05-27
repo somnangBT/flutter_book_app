@@ -35,46 +35,24 @@ class _LoginScreenState extends State<LoginScreen> {
   final _keyForm = GlobalKey<FormState>();
 
   Future<void> _onLoginSubmitHandler() async {
-    print("Email  : ${emailController.text}");
-    print("Password : ${passwordController.text}");
-
     if (_keyForm.currentState!.validate()) {
       String user = emailController.text;
       String pass = passwordController.text;
-      // Can submit to Backend API.
+      
       final pref = await SharedPreferences.getInstance();
-      String username = pref.getString("username")!;
-      String password = pref.getString("password")!;
+      String username = pref.getString("username") ?? "mad@gmail.com";
+      String password = pref.getString("password") ?? "123456";
+
       if (user == username && pass == password) {
-        print("Login success..");
-        final snackBar = SnackBar(
-          backgroundColor: Colors.lightBlue,
-          content: Text("Login success"),
-          action: SnackBarAction(
-            label: "Close",
-            onPressed: () {
-              ScaffoldMessenger.of(context).hideCurrentSnackBar();
-              final route = MaterialPageRoute(
-                builder: (BuildContext context) => MainScreen(),
-              );
-              Navigator.pushReplacement(context, route);
-            },
-          ),
-        );
-        ScaffoldMessenger.of(context).showSnackBar(snackBar);
+        // SAVE USER NAME UPON SUCCESS
+        await pref.setString("fullName", "Somnang"); 
+        
+        Get.snackbar("Success", "Login successful", backgroundColor: Colors.green, colorText: Colors.white);
+        
+        // Navigate to MainScreen
+        Get.offAll(() => MainScreen());
       } else {
-        print("Invalid Username or Password");
-        final snackBar = SnackBar(
-          backgroundColor: Colors.lightBlue,
-          content: Text("Invalid Username or Password"),
-          action: SnackBarAction(
-            label: "Close",
-            onPressed: () {
-              ScaffoldMessenger.of(context).hideCurrentSnackBar();
-            },
-          ),
-        );
-        ScaffoldMessenger.of(context).showSnackBar(snackBar);
+        Get.snackbar("Error", "Invalid Username or Password", backgroundColor: Colors.redAccent, colorText: Colors.white);
       }
     }
   }
@@ -100,9 +78,7 @@ class _LoginScreenState extends State<LoginScreen> {
           hintText: "Email",
         ),
         validator: (v) {
-          if (v!.isEmpty) {
-            return "Email could not be blank.";
-          }
+          if (v!.isEmpty) return "Email could not be blank.";
           return null;
         },
       ),
@@ -116,22 +92,14 @@ class _LoginScreenState extends State<LoginScreen> {
         decoration: InputDecoration(
           prefixIcon: Icon(Icons.lock),
           suffixIcon: IconButton(
-            onPressed: () {
-              setState(() {
-                _obscureText = !_obscureText;
-              });
-            },
-            icon: _obscureText
-                ? Icon(Icons.visibility_off)
-                : Icon(Icons.visibility),
+            onPressed: () => setState(() => _obscureText = !_obscureText),
+            icon: Icon(_obscureText ? Icons.visibility_off : Icons.visibility),
           ),
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(30)),
           hintText: "Password",
         ),
         validator: (v) {
-          if (v!.isEmpty) {
-            return "Password could not be blank.";
-          }
+          if (v!.isEmpty) return "Password could not be blank.";
           return null;
         },
       ),
@@ -150,92 +118,44 @@ class _LoginScreenState extends State<LoginScreen> {
       ),
     );
 
-    final forgetPassword = Row(
-      mainAxisAlignment: MainAxisAlignment.end,
-      children: [
-        TextButton(
-          onPressed: () {
-            final route = MaterialPageRoute(
-              builder: (BuildContext context) => ForgetPasswordScreen(),
-            );
-            Navigator.push(context, route);
-          },
-          child: Text("ភ្លេចលេខសង្ងាត់"),
-        ),
-      ],
-    );
-
-    final noAccount = Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Text("មិនមានគណនីទេ?"),
-        TextButton(
-          onPressed: () {
-            final route = MaterialPageRoute(
-              builder: (BuildContext context) => RegisterScreen(),
-            );
-            Navigator.push(context, route);
-          },
-          child: Text(
-            "ចុះឈ្មោះ",
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
-        ),
-      ],
-    );
-
-    final orLineWidget = Row(
-      children: [
-        Expanded(child: Divider(thickness: 2)),
-        Text("ឬក៏"),
-        Expanded(child: Divider(thickness: 2)),
-      ],
-    );
-
-    final socialWidget = Padding(
-      padding: EdgeInsets.only(top: 16),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.facebook, color: Colors.blue, size: 40),
-          SizedBox(width: 8),
-          Icon(Icons.mail_outlined, color: Colors.red, size: 40),
-        ],
-      ),
-    );
-
-    final loginForm = Form(
-      key: _keyForm,
-      child: Column(
-        children: [usernameTextField, passwordTextField, forgetPassword],
-      ),
-    );
-
     final _skipButton = TextButton(
-      onPressed: () {
-        // final route = MaterialPageRoute(
-        //   builder: (BuildContext context) => MainScreen(),
-        // );
-        // Navigator.pushReplacement(context, route);
-
-        Get.off(MainScreen());
-      },
+      onPressed: () => Get.offAll(MainScreen()),
       child: Text("រំលង", style: TextStyle(color: Colors.blue)),
     );
 
     return Scaffold(
       body: SafeArea(
-        child: Column(
-          children: [
-            customLogo,
-            loginForm,
-            loginButton,
-            noAccount,
-            orLineWidget,
-            socialWidget,
-            SizedBox(height: 40),
-            _skipButton,
-          ],
+        child: SingleChildScrollView(
+          child: Column(
+            children: [
+              customLogo,
+              Form(
+                key: _keyForm,
+                child: Column(
+                  children: [usernameTextField, passwordTextField],
+                ),
+              ),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  onPressed: () => Get.to(ForgetPasswordScreen()),
+                  child: Text("ភ្លេចលេខសង្ងាត់"),
+                ),
+              ),
+              loginButton,
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text("មិនមានគណនីទេ?"),
+                  TextButton(
+                    onPressed: () => Get.to(RegisterScreen()),
+                    child: Text("ចុះឈ្មោះ", style: TextStyle(fontWeight: FontWeight.bold)),
+                  ),
+                ],
+              ),
+              _skipButton,
+            ],
+          ),
         ),
       ),
     );

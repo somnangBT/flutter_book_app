@@ -21,7 +21,7 @@ class FileStorageManager {
     String b1 = "bookId=1,price=10000,qty=1"+"\n";
     String b2 = "bookId=2,price=8000,qty=1"+"\n";
     String b3 = "bookId=3,price=12000,qty=1"+"\n";
-
+    String b4 = "bookId=4,price=12000,qty=1"+"\n";
     file.writeAsString(b1, mode: FileMode.append);
 
   }

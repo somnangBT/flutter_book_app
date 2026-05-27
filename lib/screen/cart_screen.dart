@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:mad/controller/order_controller.dart';
 import 'package:mad/model/orders.dart';
-import 'package:mad/service/order_service.dart';
+import 'package:mad/screen/checkout_screen.dart';
 
 class CartScreen extends StatefulWidget {
   const CartScreen({super.key});
@@ -12,229 +12,289 @@ class CartScreen extends StatefulWidget {
 }
 
 class _CartScreenState extends State<CartScreen> {
-  final orderController = Get.put(OrderController());
-  bool _isLoading = false;
-  String _errorMessage = "No Data";
-  List<Orders> orderList = [];
-
-  @override
-  void initState() {
-    super.initState();
-    _loadDataFromServer();
-
-    print("Order List : ${orderController.orderList}");
-  }
-
-  Future<void> _loadDataFromServer() async {
-    // await OrderService.instance
-    //     .readOrders()
-    //     .then((List<Orders> orders) {
-    //       setState(() {
-    //         orderList = orders;
-    //         _isLoading = false;
-    //       });
-    //     })
-    //     .catchError((error) {
-    //       setState(() {
-    //         _isLoading = false;
-    //         _errorMessage = error;
-    //       });
-    //     });
-
-    // setState(() {
-    //   orderList = orderController.orderList;
-    //   _isLoading = false;
-    //   _errorMessage = "Success";
-    // });
-  }
+  final OrderController orderController = Get.find<OrderController>();
 
   bool isShipping = true;
 
   double _calculateSubTotal() {
-    return orderList.length * 2;
+    return orderController.orderList.fold(
+      0.0,
+      (sum, item) => sum + ((item.amount ?? 0) * (item.qty ?? 0)),
+    );
   }
 
   double _calculateVat() {
-    return (orderList.length * 2) * (10 / 100);
+    return _calculateSubTotal() * 0.10;
   }
 
   double _calculateTotal() {
-    return _calculateSubTotal() + _calculateVat() + (isShipping ? 5 : 0);
+    return _calculateSubTotal() + _calculateVat() + (isShipping ? 5.0 : 0.0);
   }
 
   @override
   Widget build(BuildContext context) {
-    final orderListWidget = Obx(
-      () => ListView.builder(
-        itemBuilder: (BuildContext context, int index) {
-          Orders m = orderController.orderList[index];
-          return SizedBox(
-            child: Dismissible(
-              background: Container(color: Colors.redAccent),
-              key: ValueKey<int>(index),
-              onDismissed: (DismissDirection direction) {
-                // OrderService.instance.removeCart(m.id!);
-                orderController.orderList.remove(m);
-              },
-              child: Row(
+    return Scaffold(
+      appBar: AppBar(
+        elevation: 3,
+        title: const Text("Cart"),
+        centerTitle: true,
+      ),
+
+      body: SafeArea(
+        child: Obx(() {
+          if (orderController.isLoading.value) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (orderController.orderList.isEmpty) {
+            return const Center(
+              child: Text("No Items in Cart", style: TextStyle(fontSize: 18)),
+            );
+          }
+
+          return Column(
+            children: [
+              Expanded(
+                child: ListView.builder(
+                  itemCount: orderController.orderList.length,
+
+                  itemBuilder: (context, index) {
+                    final Orders m = orderController.orderList[index];
+
+                    return Dismissible(
+                      key: UniqueKey(),
+
+                      direction: DismissDirection.endToStart,
+
+                      background: Container(
+                        color: Colors.redAccent,
+
+                        alignment: Alignment.centerRight,
+
+                        padding: const EdgeInsets.only(right: 20),
+
+                        child: const Icon(Icons.delete, color: Colors.white),
+                      ),
+
+                      onDismissed: (direction) {
+                        orderController.orderList.remove(m);
+
+                        Get.snackbar(
+                          "Removed",
+                          "Item removed from cart",
+
+                          snackPosition: SnackPosition.BOTTOM,
+                        );
+                      },
+
+                      child: Card(
+                        margin: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+
+                        child: Padding(
+                          padding: const EdgeInsets.all(12),
+
+                          child: Row(
+                            children: [
+                              Image.asset(
+                                "assets/images/book2.png",
+
+                                width: 60,
+                                height: 90,
+
+                                fit: BoxFit.cover,
+
+                                errorBuilder: (context, error, stackTrace) {
+                                  return const Icon(Icons.book, size: 50);
+                                },
+                              ),
+
+                              const SizedBox(width: 12),
+
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+
+                                  children: [
+                                    Text(
+                                      "Order #${m.id ?? index}",
+
+                                      style: const TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+
+                                    const SizedBox(height: 6),
+
+                                    Text(
+                                      "\$${m.amount}",
+
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        color: Colors.grey,
+                                      ),
+                                    ),
+
+                                    const SizedBox(height: 8),
+
+                                    Row(
+                                      children: [
+                                        IconButton(
+                                          onPressed: () {
+                                            orderController.decreaseQty(index);
+                                          },
+                                          icon: const Icon(
+                                            Icons.remove_circle_outline,
+                                          ),
+                                        ),
+
+                                        Text(
+                                          "${m.qty}",
+
+                                          style: const TextStyle(fontSize: 18),
+                                        ),
+
+                                        IconButton(
+                                          onPressed: () {
+                                            orderController.increaseQty(index);
+                                          },
+
+                                          icon: const Icon(
+                                            Icons.add_circle_outline,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+
+              _buildOrderSummary(),
+            ],
+          );
+        }),
+      ),
+    );
+  }
+
+  Widget _buildOrderSummary() {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+
+      child: Column(
+        children: [
+          Card(
+            elevation: 3,
+
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+
+              child: Column(
                 children: [
-                  Image.asset(
-                    "assets/images/book2.png",
-                    width: 50,
-                    height: 100,
+                  _buildSummaryRow(
+                    "Sub-Total",
+                    "\$ ${_calculateSubTotal().toStringAsFixed(2)}",
                   ),
-                  Expanded(
-                    child: Column(
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text("${m.phoneNumber}",
-                              style: TextStyle(fontSize: 18),
-                            ),
-                          ],
-                        ),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text("2\$"),
-                            Row(
-                              children: [
-                                Padding(
-                                  padding: EdgeInsets.only(right: 8),
-                                  child: IconButton(
-                                    onPressed: () {},
-                                    icon: Icon(
-                                      Icons.add_circle_outline,
-                                      size: 16,
-                                    ),
-                                  ),
-                                ),
-                                Text("1", style: TextStyle(fontSize: 18)),
-                                Padding(
-                                  padding: EdgeInsets.only(left: 8),
-                                  child: IconButton(
-                                    onPressed: () {},
-                                    icon: Icon(
-                                      Icons.remove_circle_outline,
-                                      size: 16,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                        Divider(),
-                      ],
-                    ),
+
+                  _buildSummaryRow(
+                    "VAT (10%)",
+                    "\$ ${_calculateVat().toStringAsFixed(2)}",
+                  ),
+
+                  _buildSummaryRow("Shipping Fee", "\$ ${isShipping ? 5 : 0}"),
+
+                  const Divider(),
+
+                  _buildSummaryRow(
+                    "Total",
+                    "\$ ${_calculateTotal().toStringAsFixed(2)}",
+                    isBold: true,
                   ),
                 ],
               ),
             ),
-          );
-        },
-        itemCount: orderController.orderList.length,
-      ),
-    );
-
-    final subTotal = SizedBox(
-      child: Padding(
-        padding: EdgeInsets.only(left: 16, right: 16, bottom: 16, top: 16),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [Text("Sub-Total"), Text("\$ ${_calculateSubTotal()}")],
-        ),
-      ),
-    );
-
-    final vat = SizedBox(
-      child: Padding(
-        padding: EdgeInsets.only(left: 16, right: 16, bottom: 16),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [Text("VAT (%)"), Text("\$ ${_calculateVat()}")],
-        ),
-      ),
-    );
-
-    final shippingFee = SizedBox(
-      child: Padding(
-        padding: EdgeInsets.only(left: 16, right: 16, bottom: 16),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [Text("Shipping Fee"), Text("\$ ${isShipping ? 5 : 0}")],
-        ),
-      ),
-    );
-
-    final total = SizedBox(
-      child: Padding(
-        padding: EdgeInsets.only(left: 16, right: 16, bottom: 16),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              "Total",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            Text(
-              "\$ ${_calculateTotal()}",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-          ],
-        ),
-      ),
-    );
-
-    final checkoutBtn = SizedBox(
-      child: Padding(
-        padding: EdgeInsets.only(left: 8, right: 8, bottom: 16),
-        child: SizedBox(
-          height: 50,
-          width: MediaQuery.of(context).size.width,
-          child: ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
-            onPressed: () {},
-            child: Text("Checkout", style: TextStyle(color: Colors.white)),
           ),
-        ),
+
+          const SizedBox(height: 16),
+
+          SizedBox(
+            height: 50,
+            width: double.infinity,
+
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.redAccent,
+              ),
+
+              // NAVIGATE TO CHECKOUT SCREEN
+              onPressed: () {
+                if (orderController.orderList.isEmpty) {
+                  Get.snackbar(
+                    "Cart Empty",
+                    "Please add items to cart",
+
+                    snackPosition: SnackPosition.BOTTOM,
+
+                    backgroundColor: Colors.redAccent,
+
+                    colorText: Colors.white,
+                  );
+
+                  return;
+                }
+
+                Get.to(() => CheckoutScreen());
+              },
+
+              child: const Text(
+                "Checkout",
+
+                style: TextStyle(color: Colors.white, fontSize: 16),
+              ),
+            ),
+          ),
+        ],
       ),
     );
+  }
 
-    final orderInfoRow = Padding(
-      padding: EdgeInsets.only(top: 16),
-      child: Card(
-        color: Colors.white,
-        child: Column(
-          children: [
-            subTotal,
-            vat,
-            shippingFee,
-            SizedBox(child: Divider()),
-            total,
-          ],
-        ),
-      ),
-    );
+  Widget _buildSummaryRow(String label, String value, {bool isBold = false}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
 
-    final orderAndCheckOutRow = Column(children: [orderInfoRow, checkoutBtn]);
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
 
-    return Scaffold(
-      appBar: AppBar(elevation: 3, title: Text("Cart"), centerTitle: true),
-      body: SafeArea(
-        child: Obx(
-          () => orderController.isLoading.value
-              ? Center(child: CircularProgressIndicator())
-              : orderController.orderList.length == 0
-              ? Center(child: Text("No Cart"))
-              : Column(
-                  children: [
-                    Expanded(child: orderListWidget),
-                    orderAndCheckOutRow,
-                  ],
-                ),
-        ),
+        children: [
+          Text(
+            label,
+
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
+            ),
+          ),
+
+          Text(
+            value,
+
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
+            ),
+          ),
+        ],
       ),
     );
   }
