@@ -36,23 +36,55 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _onLoginSubmitHandler() async {
     if (_keyForm.currentState!.validate()) {
-      String user = emailController.text;
-      String pass = passwordController.text;
-      
-      final pref = await SharedPreferences.getInstance();
-      String username = pref.getString("username") ?? "mad@gmail.com";
-      String password = pref.getString("password") ?? "123456";
+      // ប្រើ .trim() ដើម្បីកាត់ដកឃ្លាចេញពីខាងមុខ និងខាងក្រោយ
+      String user = emailController.text.trim();
+      String pass = passwordController.text.trim();
 
-      if (user == username && pass == password) {
-        // SAVE USER NAME UPON SUCCESS
-        await pref.setString("fullName", "Somnang"); 
-        
-        Get.snackbar("Success", "Login successful", backgroundColor: Colors.green, colorText: Colors.white);
-        
-        // Navigate to MainScreen
-        Get.offAll(() => MainScreen());
+      final pref = await SharedPreferences.getInstance();
+
+      // ១. ទាញយកទិន្នន័យដែលបានរក្សាទុកពេល Registration
+      String? savedUsername = pref.getString("username");
+      String? savedPassword = pref.getString("password");
+
+      // បន្ថែម Print ដើម្បីឆែកមើលក្នុង Console (ពេលមានបញ្ហា វានឹងបង្ហាញប្រាប់)
+      print("--- ពិនិត្យទិន្នន័យ Login ---");
+      print("បញ្ចូល: User='$user', Pass='$pass'");
+      print("ក្នុងម៉ាស៊ីន: User='$savedUsername', Pass='$savedPassword'");
+
+      // ២. ព័ត៌មាន Login សម្រាប់ Admin (Default)
+      String defaultUser = "mad@gmail.com";
+      String defaultPass = "123456";
+
+      // ៣. ឆែកលក្ខខណ្ឌ
+      bool isRegisteredUser = (savedUsername != null && user == savedUsername && pass == savedPassword);
+      bool isDefaultUser = (user == defaultUser && pass == defaultPass);
+
+      if (isRegisteredUser || isDefaultUser) {
+
+        // បើចូលដោយប្រើ Default User ឱ្យដាក់ឈ្មោះថា MAD Admin
+        if (isDefaultUser && !isRegisteredUser) {
+          await pref.setString("fullName", "MAD Admin");
+        }
+
+        Get.snackbar(
+            "ជោគជ័យ",
+            "ការចូលប្រើប្រាស់បានជោគជ័យ",
+            backgroundColor: Colors.green,
+            colorText: Colors.white,
+            snackPosition: SnackPosition.TOP
+        );
+
+        // ទៅកាន់ MainScreen
+        Get.offAll(() => const MainScreen());
       } else {
-        Get.snackbar("Error", "Invalid Username or Password", backgroundColor: Colors.redAccent, colorText: Colors.white);
+        // បើ Login មិនចូល
+        Get.snackbar(
+            "បរាជ័យ",
+            "Email ឬ លេខសម្ងាត់មិនត្រឹមត្រូវ",
+            backgroundColor: Colors.redAccent,
+            colorText: Colors.white,
+            snackPosition: SnackPosition.TOP
+        );
       }
     }
   }

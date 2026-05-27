@@ -22,17 +22,21 @@ class _AccountScreenState extends State<AccountScreen> {
   Future<void> _checkLoginStatus() async {
     final sharedPrefManager = SharedPrefManager();
     try {
-      // SharedPrefManager.getSharedPref uses '!' which throws if null
+      // This reads from the disk
       final name = await sharedPrefManager.getSharedPref("fullName");
+
+      // DEBUG: Check this in your VS Code Console!
+      print("STORAGE DATA: Currently saved name is: $name");
+
       setState(() {
         _fullName = name;
       });
     } catch (e) {
-      setState(() {
-        _fullName = null;
-      });
+      print("Error loading name: $e");
+      setState(() { _fullName = null; });
     }
   }
+
 
   Future<void> _onLogoutSubmitHandler() async {
     final sharedPrefManager = SharedPrefManager();
