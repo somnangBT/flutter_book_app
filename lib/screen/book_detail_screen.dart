@@ -5,83 +5,40 @@ import 'package:mad/model/orders.dart';
 import 'package:mad/screen/cart_screen.dart';
 
 class BookDetailScreen extends StatefulWidget {
-  const BookDetailScreen({super.key});
+  final dynamic product;
+
+  const BookDetailScreen({super.key, required this.product});
 
   @override
   State<BookDetailScreen> createState() => _BookDetailScreenState();
 }
 
 class _BookDetailScreenState extends State<BookDetailScreen> {
-  // Use Get.find because OrderController is initialized globally in main.dart
+
   final orderController = Get.find<OrderController>();
 
   Future<void> _orderProcess() async {
+    final product = widget.product;
+
     final orderItem = Orders(
-        bookId: 1,
-        qty: 1,
-        amount: 2.0,
-        phoneNumber: "01234567",
-        discount: 0,
-        totalAmount: 2);
-    
-    orderController.orderList.add(orderItem);
-    
-    const snackBar = SnackBar(
-      content: Text("Order success"),
-      duration: Duration(seconds: 1),
+      bookId: product['id'],
+      qty: 1,
+      amount: product['price'],
+      phoneNumber: "01234567",
+      discount: 0,
+      totalAmount: product['price'],
     );
-    ScaffoldMessenger.of(context).showSnackBar(snackBar);
+
+    orderController.orderList.add(orderItem);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Added to cart")),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final bookImage = SizedBox(
-      height: 300,
-      child: Center(
-        child: Image.asset(
-          "assets/images/book2.png",
-          height: 300,
-          fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) => 
-              const Icon(Icons.book, size: 100, color: Colors.grey),
-        ),
-      ),
-    );
-
-    List<Widget> star = List.generate(5, (i) {
-      return const Icon(Icons.star, color: Colors.amber);
-    }).toList();
-
-    final rateStateRow = Row(
-      mainAxisAlignment: MainAxisAlignment.end,
-      children: star,
-    );
-
-    const bookTitle = Text(
-      "កម្រងគតិបណ្ឌិត",
-      style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold),
-    );
-    const author = Text("គឹម ពេជ្រពីរនន់");
-
-    const description = Text(
-      "រាប់ពាន់ឆ្នាំមកហើយដែលបុព្វបុរសជាច្រើនធ្លាប់បានរៀនសូត្រ ទទួលបទពិសោធផ្ទាល់ខ្លួន ឬត្រិះរិះពិចារណារកឃើញសច្ចភាពដ៏មានតម្លៃផ្សេងៗនិងបានចងក្រងនូវអ្វីដែលខ្លួនបានរកឃើញទាំងនោះដើម្បីទុកជាប្រយោជន៍ដល់អនុជនជំនាន់ក្រោយ។",
-    );
-
-    final addToCartButton = Padding(
-      padding: const EdgeInsets.only(left: 8, right: 8, bottom: 16),
-      child: SizedBox(
-        height: 40,
-        width: MediaQuery.of(context).size.width,
-        child: ElevatedButton(
-          style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF3051A0)),
-          onPressed: _orderProcess,
-          child: const Text(
-            "Add to Cart",
-            style: TextStyle(color: Colors.white, fontFamily: 'KantumruyPro'),
-          ),
-        ),
-      ),
-    );
+    final product = widget.product;
 
     return Scaffold(
       appBar: AppBar(
@@ -91,7 +48,6 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
         actions: [
           IconButton(
             onPressed: () {
-              // Navigate to CartScreen
               Get.to(() => const CartScreen());
             },
             icon: const Icon(Icons.shopping_cart),
@@ -100,29 +56,82 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
       ),
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.only(left: 16, right: 16),
+          padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Column(
             children: [
               Expanded(
                 child: SingleChildScrollView(
                   child: Column(
                     children: [
-                      bookImage,
-                      rateStateRow,
-                      bookTitle,
-                      author,
+                      Image.network(
+                        product['image'],
+                        height: 300,
+                        fit: BoxFit.contain,
+                      ),
+
                       const SizedBox(height: 10),
+
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: List.generate(
+                          5,
+                              (i) => const Icon(Icons.star, color: Colors.amber),
+                        ),
+                      ),
+
+                      const SizedBox(height: 10),
+
+                      Text(
+                        product['title'],
+                        style: const TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+
+                      Text(
+                        "\$${product['price']}",
+                        style: const TextStyle(
+                          fontSize: 18,
+                          color: Colors.green,
+                        ),
+                      ),
+
+                      const SizedBox(height: 10),
+
                       const Align(
                         alignment: Alignment.centerLeft,
-                        child: Text("ពិពណ៌នា", style: TextStyle(fontWeight: FontWeight.bold)),
+                        child: Text(
+                          "Description",
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
                       ),
+
                       const SizedBox(height: 4),
-                      description,
+
+                      Text(product['description'] ?? "No description"),
                     ],
                   ),
                 ),
               ),
-              addToCartButton,
+
+              Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: SizedBox(
+                  width: double.infinity,
+                  height: 45,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF3051A0),
+                    ),
+                    onPressed: _orderProcess,
+                    child: const Text(
+                      "Add to Cart",
+                      style: TextStyle(color: Colors.white),
+                    ),
+                  ),
+                ),
+              ),
             ],
           ),
         ),
